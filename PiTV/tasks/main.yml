@@ -1,0 +1,14 @@
+---
+
+  - name: Install packages needed for ntfs
+    apt:
+      name: ntfs-3g
+      state: installed
+      
+  - name: Esure external storage is mounted
+    mount:
+      path: /mnt/PiTV
+      src: /dev/sda1
+      fstype: ntfs
+      opts: rw,auto.user
+      state: mounted
