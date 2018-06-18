@@ -4,8 +4,8 @@
     apt:
       name: ntfs-3g
       state: installed
-      
-  - name: Esure external storage is mounted
+
+  - name: Ensure external storage is mounted
     mount:
       path: /mnt/PiTV
       src: /dev/sda1
