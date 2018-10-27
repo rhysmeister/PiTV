@@ -1,0 +1,5 @@
+CP_USER=couchpotato
+CP_HOME=/home/pi/git_cp
+CP_DATA=/var/opt/couchpotato
+CP_PIDFILE=/var/run/couchpotato/couchpotato.pid
+PYTHON_BIN=/usr/bin/python

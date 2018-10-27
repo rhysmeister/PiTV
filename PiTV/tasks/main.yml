@@ -1,14 +1,114 @@
 ---
-
+# https://www.howtogeek.com/142249/how-to-turn-a-raspberry-pi-into-an-always-on-usenet-machine/
+# https://www.howtogeek.com/146410/how-to-automate-your-always-on-raspberry-pi-download-box/
   - name: Install packages needed for ntfs
     apt:
-      name: ntfs-3g
+      name: "{{ item }}"
       state: installed
+    with_items:
+      - ntfs-3g
+      - fuse
 
   - name: Ensure external storage is mounted
     mount:
       path: /mnt/PiTV
       src: /dev/sda1
       fstype: ntfs
-      opts: rw,auto.user
+      opts: rw,auto.user,uid=pi,gid=pi
       state: mounted
+
+  - name: Install sabnzbdplus
+    apt:
+      name: sabnzbdplus
+      state: installed
+
+  - name: Install unrar-free TODO - REMOVE THIS. SOFTWARE DOES NOT WORK
+    apt:
+      name: unrar-free
+      state: installed
+
+  - name: Install git
+    apt:
+      name: git
+      state: installed
+
+  - name: Ensure sabnzbdplus directories exist
+    file:
+      path: "{{ item }}"
+      state: directory
+      mode: 0755
+      owner: pi
+      group: pi
+    with_items:
+      - /mnt/PiTV/sabnzbdplus/downloading
+      - /mnt/PiTV/sabnzbdplus/completed
+      - /mnt/PiTV/sabnzbdplus/watch
+      - /mnt/PiTV/sabnzbdplus/watch/nzb-backup
+      - /mnt/PiTV/sabnzbdplus/scripts
+
+  - name: Ensure user is configed in sabnzbdplus
+    lineinfile:
+      regexp: '^USER'
+      line: 'USER=pi'
+      path: /etc/default/sabnzbdplus
+
+  - pause:
+      prompt: Some manual sabnzbdplus config needed. See the documentation and press enter when ready to continue
+
+  - name: Ensure sabnzbdplus is started
+    service:
+      name: sabnzbdplus
+      state: started
+      enabled: yes
+
+  - name: Clone the Sickbeard repo
+    git:
+      repo: git://github.com/midgetspy/Sick-Beard.git
+      dest: /home/pi/git/
+      update: no
+    become: no
+
+  - pause:
+    prompt: Manual config of Sickbeard for the first time. ssh into the pi and cd git/Sick-Beard; python SickBeard.py and follow prompts. Enter to skip
+
+  - name: Clone the Couchpotato repo
+    git:
+      repo: git://github.com/RuudBurger/CouchPotatoServer.git
+      dest: /home/pi/git_cp/
+      update: no
+    become: no
+
+  - pause:
+      prompt: Manual config of Couchpotato for the first time. python git_cp/CouchPotato.py
+
+  - name: Ensiure Couchpotato is setup to autostart
+    copy:
+      src: couchpotato
+      dest: /etc/init.d/couchpotato
+      mode: 0755
+
+  - shell: sudo update-rc.d couchpotato defaults && touch cp.defaults
+    args:
+      creates: cp.defaults
+
+  - name: Ensure couchpotato user exists
+    user:
+      name: couchpotato
+      state: present
+
+  - name: Ensure couhcpotato datadir exists
+    file:
+      name: /var/opt/couchpotato
+      state: directory
+      owner: couchpotato
+      mode: 0755
+
+  - name: Ensure /etc/defaults/ dir exists
+    file:
+      name: /etc/defaults/
+      state: directory
+
+  - name: Ensure couchpotato config exists
+    copy:
+      src: cp_config
+      dest: /etc/defaults/couchpotato
